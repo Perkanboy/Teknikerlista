@@ -18,7 +18,7 @@
     border: 1px solid #666;
     white-space: nowrap;
     font-size: 13px;
-    color: #c8cacc;
+    color: #fff; /* textfärg på tooltip */
   }
 
   /* Färglista över tekniker */
@@ -46,7 +46,7 @@
     color:#000;
     font-weight:bold;
     border:1px solid #666;
-    background-color: white;
+    background-color: white; /* bakgrund för panelen */
     transition: background 0.3s;
   }
   .tech-color-box { width:20px; height:20px; border-radius:4px; border:1px solid #333; }
@@ -224,7 +224,7 @@ async function loadCSV(){
   for(const row of rows){
     const name = row.namn;
     const homeAddress = row.hemadress;
-    const color = row.färg || "#c8cacc";
+    const color = row.färg || "#ff0000";
     const resource = row.resurs || "";
     const addressList = row.adresser.split("|").map(a=>a.trim()).filter(a=>a);
 
@@ -265,7 +265,7 @@ async function loadCSV(){
         .addTo(map)
         .bindTooltip(`${name}<br>${resource}`,{permanent:true,direction:"right",className:"house-label",offset:[10,0]});
         const el = marker.getTooltip().getElement();
-        if(el){ el.style.backgroundColor = color; el.style.color = "#c8cacc"; }
+        if(el){ el.style.backgroundColor = color; el.style.color = "#fff"; }
         allMarkers.push({ marker, techName: name });
         loaded++; updateLoading();
         await sleep(10 + Math.random()*10);
@@ -324,45 +324,52 @@ async function searchAddress(){
   // Lägg till blå markör för den sökta adressen
   searchMarker = L.marker(coords, {
     icon: L.divIcon({
-      html: "🔵",
+      html: "📍",
       className: "transparent-icon",
       iconSize: [50,50],
       iconAnchor: [25,25]
     })
   }).addTo(map).bindTooltip(q, {permanent:true, direction:"top", className:"house-label", offset:[0,-10]});
 
-  // Blå färg på tooltip
   const el = searchMarker.getTooltip().getElement();
   if(el){
-    el.style.backgroundColor = "#2196F3"; // blå
-    el.style.color = "#fff";
+    el.style.backgroundColor = "#2196F3"; // blå bakgrund
+    el.style.color = "#fff";              // vit text
   }
 
   // Zooma till den nya markören
   map.setView(coords, 15);
 
-  // Hitta närmaste tekniker
-  let nearest = null;
-  let min = Infinity;
-  allMarkers.forEach(o=>{
+  // Beräkna avstånd till alla tekniker
+  const distances = allMarkers.map(o => {
     const ll = o.marker.getLatLng();
     const d = Math.hypot(ll.lat - coords[0], ll.lng - coords[1]);
-    if(d < min){ min = d; nearest = o; }
+    return { techName: o.techName, distance: d };
   });
 
-  if(!nearest) return alert("Ingen tekniker hittades");
+  // Sortera efter avstånd
+  distances.sort((a,b) => a.distance - b.distance);
 
-  // Återställ färger
+  // Ta de två närmaste teknikerna
+  const nearestTwo = distances.slice(0, 2).map(d => d.techName);
+
+  // Återställ alla tekniker i färgpanelen
   technicians.forEach((t,i)=>{
     const el = document.getElementById("tech-color-"+i);
-    if(el) el.style.backgroundColor = "white";
+    if(el){
+      el.style.backgroundColor = "white"; // standard bakgrund
+      el.style.color = "#000";            // standard textfärg
+    }
   });
 
-  // Endast närmsta tekniker grå
+  // Markera de två närmaste teknikerna
   technicians.forEach((t,i)=>{
-    if(t.name === nearest.techName){
+    if(nearestTwo.includes(t.name)){
       const el = document.getElementById("tech-color-"+i);
-      if(el) el.style.backgroundColor = "#FF5C00";
+      if(el){
+        el.style.backgroundColor = "lightgray"; // ny bakgrundsfärg för närmaste
+        el.style.color = "#000";               // textfärg
+      }
     }
   });
 }
