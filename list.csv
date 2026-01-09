@@ -1,1 +1,3 @@
-Paul,Täppvägen 4 Storavika,Blue,Vitvaror,Klockarvägen 57 Södertälje|Vendelsövägen 13 Haninge
+namn,hemadress,färg,resurs,adresser
+Anna Andersson,"Storgatan 1, Stockholm",#ff0000,Bil,"Sveavägen 10, Stockholm | Kungsgatan 5, Stockholm"
+Erik Johansson,"Parkvägen 3, Solna",#0000ff,Elbil,"Frösundaleden 2, Solna | Råsundavägen 15, Solna"
