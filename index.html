@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<title>Tekniker – områden & hem</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+  body { margin: 0; font-family: Arial, sans-serif; }
+  #map { height: 100vh; }
+
+  /* Tooltip med teknikerns färg */
+  .house-label {
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #666;
+    white-space: nowrap;
+    font-size: 13px;
+    color: #c8cacc;
+  }
+
+  /* Färglista över tekniker */
+  #color-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 8px;
+    z-index: 1000;
+    font-size: 14px;
+    box-shadow: 0 0 6px rgba(0,0,0,0.3);
+  }
+  .tech-color {
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:4px 6px;
+    border-radius:4px;
+    color:#000;
+    font-weight:bold;
+    border:1px solid #666;
+    background-color: white;
+    transition: background 0.3s;
+  }
+  .tech-color-box { width:20px; height:20px; border-radius:4px; border:1px solid #333; }
+
+  #search-box {
+    position: absolute;
+    top: 90px;
+    left: 10px;
+    width: 300px;
+    display: flex;
+    gap: 5px;
+    z-index: 1000;
+  }
+  #search-box input { flex: 1; padding:6px; border-radius:4px; border:1px solid #999; }
+  #search-box button { padding:6px 10px; border-radius:4px; border:none; background-color:#4CAF50; color:white; cursor:pointer; }
+  #search-box button:hover { background-color:#45a049; }
+
+  #control-panel {
+    position: absolute;
+    top: 140px;
+    left: 10px;
+    background: rgba(255,255,255,0.95);
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 0 6px rgba(0,0,0,0.3);
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 14px;
+    z-index: 1000;
+    width: 300px;
+  }
+
+  .collapsible {
+    background-color: #f1f1f1;
+    color: #444;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 16px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+  .active, .collapsible:hover { background-color: #ddd; }
+  .content { padding: 0 10px; display: none; overflow: hidden; }
+
+  #reload-button {
+    display:block;
+    width:100%;
+    padding:6px;
+    margin-bottom:10px;
+    border:none;
+    background-color:#2196F3;
+    color:white;
+    border-radius:4px;
+    cursor:pointer;
+    font-weight:bold;
+  }
+  #reload-button:hover { background-color:#1976D2; }
+
+  #loading-container {
+    position:absolute;
+    top: 60px;
+    left: 10px;
+    width:300px;
+    height:26px;
+    background:#ddd;
+    border-radius:6px;
+    overflow:hidden;
+    z-index:1001;
+    display:none;
+  }
+  #loading-bar {
+    height:100%;
+    width:0%;
+    background:#4CAF50;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:black;
+    font-weight:bold;
+    transition: width 0.2s;
+  }
+
+  /* STÖRRE IKONER OCH CENTRERAD */
+  .transparent-icon {
+    background: transparent;
+    font-size: 32px; /* större ikon */
+    text-align: center;
+    line-height: 32px;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="color-panel"></div>
+<div id="map"></div>
+
+<div id="loading-container">
+  <div id="loading-bar">0%</div>
+</div>
+
+<div id="search-box">
+  <input type="text" id="address-input" placeholder="Sök adress...">
+  <button onclick="searchAddress()">Sök</button>
+</div>
+
+<div id="control-panel">
+  <button type="button" class="collapsible">Teknikerlista</button>
+  <div class="content">
+    <button id="reload-button" onclick="loadCSV()">Ladda om tekniker</button>
+    <div id="technician-list"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<script>
+const map = L.map("map", { zoomControl: false }).setView([59.33, 18.06], 10);
+L.control.zoom({ position: "bottomright" }).addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ attribution: "© OpenStreetMap"}).addTo(map);
+
+let technicians = [];
+let allMarkers = [];
+let addressOffsets = {};
+
+const loadingContainer = document.getElementById("loading-container");
+const loadingBar = document.getElementById("loading-bar");
+let searchMarker = null; // temporär markör för sökningar
+
+async function geocode(address){
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+  const res = await fetch(url,{headers:{ "User-Agent":"ErgonovaTekniker/1.0" }});
+  const data = await res.json();
+  if(!data.length) return null;
+  return [parseFloat(data[0].lat),parseFloat(data[0].lon)];
+}
+
+function applyOffset(latlng, key){
+  if(!addressOffsets[key]) addressOffsets[key]=0;
+  const offset = 0.00135 * addressOffsets[key];
+  addressOffsets[key]++;
+  return [latlng[0]+offset, latlng[1]];
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function loadCSV(){
+  loadingContainer.style.display = "block";
+  loadingBar.style.width = "0%";
+  loadingBar.textContent = "0%";
+
+  allMarkers.forEach(o => map.removeLayer(o.marker));
+  allMarkers = [];
+  addressOffsets = {};
+  technicians = [];
+
+  const response = await fetch("https://raw.githubusercontent.com/Perkanboy/Teknikerlista/main/list.csv");
+  const csvText = await response.text();
+  const rows = Papa.parse(csvText,{header:true,skipEmptyLines:true}).data;
+
+  let total = 0;
+  rows.forEach(r => total += 1 + r.adresser.split("|").filter(a=>a.trim()).length);
+  let loaded = 0;
+  function updateLoading(){ 
+    const p = Math.round((loaded/total)*100); 
+    loadingBar.style.width = p+"%"; 
+    loadingBar.textContent = p+"%"; 
+  }
+
+  for(const row of rows){
+    const name = row.namn;
+    const homeAddress = row.hemadress;
+    const color = row.färg || "#c8cacc";
+    const resource = row.resurs || "";
+    const addressList = row.adresser.split("|").map(a=>a.trim()).filter(a=>a);
+
+    technicians.push({ name, color, resource, home:{address:homeAddress}, addresses:addressList });
+
+    const homeLat = await geocode(homeAddress);
+    if(homeLat){
+      const adj = applyOffset(homeLat, homeAddress);
+      const marker = L.marker(adj,{
+        icon:L.divIcon({
+          html:"🏠",
+          className:"transparent-icon",
+          iconSize:[50,50],
+          iconAnchor:[25,25]
+        })
+      })
+      .addTo(map)
+      .bindTooltip(`${name}<br>${resource}`,{permanent:true,direction:"right",className:"house-label",offset:[10,0]});
+      const el = marker.getTooltip().getElement();
+      if(el){ el.style.backgroundColor = color; el.style.color = "#fff"; }
+      allMarkers.push({ marker, techName: name });
+      loaded++; updateLoading();
+      await sleep(10 + Math.random()*10);
+    }
+
+    for(const addr of addressList){
+      const lat = await geocode(addr);
+      if(lat){
+        const adj = applyOffset(lat, addr);
+        const marker = L.marker(adj,{
+          icon:L.divIcon({
+            html:"📍",
+            className:"transparent-icon",
+            iconSize:[50,50],
+            iconAnchor:[25,25]
+          })
+        })
+        .addTo(map)
+        .bindTooltip(`${name}<br>${resource}`,{permanent:true,direction:"right",className:"house-label",offset:[10,0]});
+        const el = marker.getTooltip().getElement();
+        if(el){ el.style.backgroundColor = color; el.style.color = "#c8cacc"; }
+        allMarkers.push({ marker, techName: name });
+        loaded++; updateLoading();
+        await sleep(10 + Math.random()*10);
+      }
+    }
+  }
+
+  renderTechnicianList();
+  renderColorPanel();
+  setTimeout(()=> loadingContainer.style.display="none",300);
+}
+
+function renderTechnicianList(){
+  const c = document.getElementById("technician-list");
+  c.innerHTML="";
+  technicians.forEach(t=>{
+    const d = document.createElement("div");
+    d.innerHTML = `<strong>${t.name}</strong><br>Hem: ${t.home.address}<br>Resurs: ${t.resource}<br>Adresser: ${t.addresses.join(", ")}`;
+    c.appendChild(d);
+  });
+}
+
+function renderColorPanel(){
+  const p = document.getElementById("color-panel");
+  p.innerHTML="";
+  technicians.forEach((t,i)=>{
+    const d = document.createElement("div");
+    d.className="tech-color";
+    d.id="tech-color-"+i;
+    d.dataset.techName = t.name;
+    d.innerHTML = `<div class="tech-color-box" style="background:${t.color}"></div>${t.name}`;
+    p.appendChild(d);
+  });
+}
+
+const coll = document.querySelector(".collapsible");
+coll.onclick = function(){
+  this.classList.toggle("active");
+  const c = this.nextElementSibling;
+  c.style.display = c.style.display==="block"?"none":"block";
+};
+
+async function searchAddress(){
+  const q = document.getElementById("address-input").value;
+  if(!q) return alert("Skriv en adress");
+
+  const coords = await geocode(q);
+  if(!coords) return alert("Adressen hittades inte");
+
+  // Ta bort tidigare sökmarkör om den finns
+  if(searchMarker){
+    map.removeLayer(searchMarker);
+    searchMarker = null;
+  }
+
+  // Lägg till blå markör för den sökta adressen
+  searchMarker = L.marker(coords, {
+    icon: L.divIcon({
+      html: "🔵",
+      className: "transparent-icon",
+      iconSize: [50,50],
+      iconAnchor: [25,25]
+    })
+  }).addTo(map).bindTooltip(q, {permanent:true, direction:"top", className:"house-label", offset:[0,-10]});
+
+  // Blå färg på tooltip
+  const el = searchMarker.getTooltip().getElement();
+  if(el){
+    el.style.backgroundColor = "#2196F3"; // blå
+    el.style.color = "#fff";
+  }
+
+  // Zooma till den nya markören
+  map.setView(coords, 15);
+
+  // Hitta närmaste tekniker
+  let nearest = null;
+  let min = Infinity;
+  allMarkers.forEach(o=>{
+    const ll = o.marker.getLatLng();
+    const d = Math.hypot(ll.lat - coords[0], ll.lng - coords[1]);
+    if(d < min){ min = d; nearest = o; }
+  });
+
+  if(!nearest) return alert("Ingen tekniker hittades");
+
+  // Återställ färger
+  technicians.forEach((t,i)=>{
+    const el = document.getElementById("tech-color-"+i);
+    if(el) el.style.backgroundColor = "white";
+  });
+
+  // Endast närmsta tekniker grå
+  technicians.forEach((t,i)=>{
+    if(t.name === nearest.techName){
+      const el = document.getElementById("tech-color-"+i);
+      if(el) el.style.backgroundColor = "#FF5C00";
+    }
+  });
+}
+
+window.addEventListener("DOMContentLoaded", loadCSV);
+</script>
+
+</body>
+</html>
