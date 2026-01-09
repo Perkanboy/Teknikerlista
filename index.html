@@ -18,7 +18,7 @@
     border: 1px solid #666;
     white-space: nowrap;
     font-size: 13px;
-    color: #fff; /* textfärg på tooltip */
+    color: #fff;
   }
 
   /* Färglista över tekniker */
@@ -46,7 +46,7 @@
     color:#000;
     font-weight:bold;
     border:1px solid #666;
-    background-color: white; /* bakgrund för panelen */
+    background-color: white;
     transition: background 0.3s;
   }
   .tech-color-box { width:20px; height:20px; border-radius:4px; border:1px solid #333; }
@@ -136,9 +136,14 @@
   /* STÖRRE IKONER OCH CENTRERAD */
   .transparent-icon {
     background: transparent;
-    font-size: 32px; /* större ikon */
+    font-size: 32px;
     text-align: center;
     line-height: 32px;
+  }
+
+  /* Dölja kontrollpanel och sökruta tills loading är klar */
+  #search-box, #control-panel {
+    display: none;
   }
 </style>
 </head>
@@ -179,7 +184,7 @@ let addressOffsets = {};
 
 const loadingContainer = document.getElementById("loading-container");
 const loadingBar = document.getElementById("loading-bar");
-let searchMarker = null; // temporär markör för sökningar
+let searchMarker = null;
 
 async function geocode(address){
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
@@ -247,7 +252,7 @@ async function loadCSV(){
       if(el){ el.style.backgroundColor = color; el.style.color = "#fff"; }
       allMarkers.push({ marker, techName: name });
       loaded++; updateLoading();
-      await sleep(10 + Math.random()*10);
+      await sleep(2 + Math.random()*2);
     }
 
     for(const addr of addressList){
@@ -275,7 +280,15 @@ async function loadCSV(){
 
   renderTechnicianList();
   renderColorPanel();
-  setTimeout(()=> loadingContainer.style.display="none",300);
+
+  // Visa kontrollpanelen och sökrutan när laddningen är klar
+  loadingBar.style.width = "100%";
+  loadingBar.textContent = "100%";
+  setTimeout(() => {
+    loadingContainer.style.display = "none";
+    document.getElementById("search-box").style.display = "flex";
+    document.getElementById("control-panel").style.display = "block";
+  }, 300);
 }
 
 function renderTechnicianList(){
@@ -315,16 +328,14 @@ async function searchAddress(){
   const coords = await geocode(q);
   if(!coords) return alert("Adressen hittades inte");
 
-  // Ta bort tidigare sökmarkör om den finns
   if(searchMarker){
     map.removeLayer(searchMarker);
     searchMarker = null;
   }
 
-  // Lägg till blå markör för den sökta adressen
   searchMarker = L.marker(coords, {
     icon: L.divIcon({
-      html: "📍",
+      html: "🔵",
       className: "transparent-icon",
       iconSize: [50,50],
       iconAnchor: [25,25]
@@ -333,42 +344,35 @@ async function searchAddress(){
 
   const el = searchMarker.getTooltip().getElement();
   if(el){
-    el.style.backgroundColor = "#2196F3"; // blå bakgrund
-    el.style.color = "#fff";              // vit text
+    el.style.backgroundColor = "#2196F3";
+    el.style.color = "#fff";
   }
 
-  // Zooma till den nya markören
   map.setView(coords, 15);
 
-  // Beräkna avstånd till alla tekniker
   const distances = allMarkers.map(o => {
     const ll = o.marker.getLatLng();
     const d = Math.hypot(ll.lat - coords[0], ll.lng - coords[1]);
     return { techName: o.techName, distance: d };
   });
 
-  // Sortera efter avstånd
   distances.sort((a,b) => a.distance - b.distance);
-
-  // Ta de två närmaste teknikerna
   const nearestTwo = distances.slice(0, 2).map(d => d.techName);
 
-  // Återställ alla tekniker i färgpanelen
   technicians.forEach((t,i)=>{
     const el = document.getElementById("tech-color-"+i);
     if(el){
-      el.style.backgroundColor = "white"; // standard bakgrund
-      el.style.color = "#000";            // standard textfärg
+      el.style.backgroundColor = "white";
+      el.style.color = "#000";
     }
   });
 
-  // Markera de två närmaste teknikerna
   technicians.forEach((t,i)=>{
     if(nearestTwo.includes(t.name)){
       const el = document.getElementById("tech-color-"+i);
       if(el){
-        el.style.backgroundColor = "lightgray"; // ny bakgrundsfärg för närmaste
-        el.style.color = "#000";               // textfärg
+        el.style.backgroundColor = "#FF5C00";
+        el.style.color = "#000";
       }
     }
   });
