@@ -196,7 +196,9 @@
     </label>
   </div>
 
-  <button type="button" class="collapsible">Teknikerlista</button>
+  <button type="button" class="collapsible nice-button">
+  <span>Teknikerlista</span>
+  <span class="arrow">▼</span></button>
   <div class="content">
     <button id="reload-button" onclick="loadCSV()">Ladda om tekniker</button>
     <div id="technician-list"></div>
@@ -419,30 +421,28 @@ function applyResourceFilter(){
   const vitvarorChecked = document.getElementById("filter-vitvaror").checked;
   const tvattstugorChecked = document.getElementById("filter-tvattstugor").checked;
 
-  allMarkers.forEach(o=>{
-    let show = true;
+  allMarkers.forEach(o => {
+    let show = false;
+    const res = o.resource.toLowerCase();
 
-    if(vitvarorChecked && !tvattstugorChecked){
-      show = o.resource.toLowerCase().includes("vitvar");
-    } 
-    else if(!vitvarorChecked && tvattstugorChecked){
-      show = o.resource.toLowerCase().includes("tvätt");
-    } 
-    else if(vitvarorChecked && tvattstugorChecked){
-      show = true;
-    } 
-    else {
+    if (vitvarorChecked && tvattstugorChecked) {
+      show = true; // båda ikryssade = visa alla
+    }
+    else if (vitvarorChecked && res.includes("vitvar")) {
       show = true;
     }
+    else if (tvattstugorChecked && res.includes("tvätt")) {
+      show = true;
+    }
+    // annars = false → visas inte
 
-    if(show){
-      if(!map.hasLayer(o.marker)) o.marker.addTo(map);
+    if (show) {
+      if (!map.hasLayer(o.marker)) o.marker.addTo(map);
     } else {
-      if(map.hasLayer(o.marker)) map.removeLayer(o.marker);
+      if (map.hasLayer(o.marker)) map.removeLayer(o.marker);
     }
   });
 }
-
 document.getElementById("filter-vitvaror").addEventListener("change", applyResourceFilter);
 document.getElementById("filter-tvattstugor").addEventListener("change", applyResourceFilter);
 
@@ -451,4 +451,3 @@ window.addEventListener("DOMContentLoaded", loadCSV);
 
 </body>
 </html>
-
