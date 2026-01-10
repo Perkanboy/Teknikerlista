@@ -4,13 +4,14 @@
 <meta charset="utf-8" />
 <title>Tekniker – områden & hem</title>
 
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
   body { margin: 0; font-family: Arial, sans-serif; }
   #map { height: 100vh; }
 
-  /* Tooltip med teknikerns färg */
   .house-label {
     font-weight: bold;
     padding: 4px 8px;
@@ -21,7 +22,6 @@
     color: #fff;
   }
 
-  /* Färglista över tekniker */
   #color-panel {
     position: absolute;
     top: 10px;
@@ -79,6 +79,28 @@
     width: 300px;
   }
 
+  .filter-panel {
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+  }
+  .filter-panel label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+  .filter-panel input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #2196F3;
+    cursor: pointer;
+  }
+
   .collapsible {
     background-color: #f1f1f1;
     color: #444;
@@ -133,7 +155,6 @@
     transition: width 0.2s;
   }
 
-  /* STÖRRE IKONER OCH CENTRERAD */
   .transparent-icon {
     background: transparent;
     font-size: 32px;
@@ -141,7 +162,6 @@
     line-height: 32px;
   }
 
-  /* Dölja kontrollpanel och sökruta tills loading är klar */
   #search-box, #control-panel {
     display: none;
   }
@@ -163,6 +183,19 @@
 </div>
 
 <div id="control-panel">
+
+  <!-- FILTER PANEL -->
+  <div class="filter-panel">
+    <label>
+      <input type="checkbox" id="filter-vitvaror" checked>
+      Vitvaror
+    </label>
+    <label>
+      <input type="checkbox" id="filter-tvattstugor" checked>
+      Tvättstugor
+    </label>
+  </div>
+
   <button type="button" class="collapsible">Teknikerlista</button>
   <div class="content">
     <button id="reload-button" onclick="loadCSV()">Ladda om tekniker</button>
@@ -250,7 +283,7 @@ async function loadCSV(){
       .bindTooltip(`${name}<br>${resource}`,{permanent:true,direction:"right",className:"house-label",offset:[10,0]});
       const el = marker.getTooltip().getElement();
       if(el){ el.style.backgroundColor = color; el.style.color = "#fff"; }
-      allMarkers.push({ marker, techName: name });
+      allMarkers.push({ marker, techName: name, resource });
       loaded++; updateLoading();
       await sleep(2 + Math.random()*2);
     }
@@ -271,7 +304,7 @@ async function loadCSV(){
         .bindTooltip(`${name}<br>${resource}`,{permanent:true,direction:"right",className:"house-label",offset:[10,0]});
         const el = marker.getTooltip().getElement();
         if(el){ el.style.backgroundColor = color; el.style.color = "#fff"; }
-        allMarkers.push({ marker, techName: name });
+        allMarkers.push({ marker, techName: name, resource });
         loaded++; updateLoading();
         await sleep(10 + Math.random()*10);
       }
@@ -280,8 +313,8 @@ async function loadCSV(){
 
   renderTechnicianList();
   renderColorPanel();
+  applyResourceFilter();
 
-  // Visa kontrollpanelen och sökrutan när laddningen är klar
   loadingBar.style.width = "100%";
   loadingBar.textContent = "100%";
   setTimeout(() => {
@@ -377,6 +410,41 @@ async function searchAddress(){
     }
   });
 }
+
+/* ===========================
+   FILTER LOGIK
+=========================== */
+
+function applyResourceFilter(){
+  const vitvarorChecked = document.getElementById("filter-vitvaror").checked;
+  const tvattstugorChecked = document.getElementById("filter-tvattstugor").checked;
+
+  allMarkers.forEach(o=>{
+    let show = true;
+
+    if(vitvarorChecked && !tvattstugorChecked){
+      show = o.resource.toLowerCase().includes("vitvar");
+    } 
+    else if(!vitvarorChecked && tvattstugorChecked){
+      show = o.resource.toLowerCase().includes("tvätt");
+    } 
+    else if(vitvarorChecked && tvattstugorChecked){
+      show = true;
+    } 
+    else {
+      show = true;
+    }
+
+    if(show){
+      if(!map.hasLayer(o.marker)) o.marker.addTo(map);
+    } else {
+      if(map.hasLayer(o.marker)) map.removeLayer(o.marker);
+    }
+  });
+}
+
+document.getElementById("filter-vitvaror").addEventListener("change", applyResourceFilter);
+document.getElementById("filter-tvattstugor").addEventListener("change", applyResourceFilter);
 
 window.addEventListener("DOMContentLoaded", loadCSV);
 </script>
