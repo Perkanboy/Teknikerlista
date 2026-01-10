@@ -5,166 +5,168 @@
 <title>Tekniker – områden & hem</title>
 
 <link rel="icon" type="image/x-icon" href="https://perkanboy.github.io/Teknikerlista/favicon.ico">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-  body { margin: 0; font-family: Arial, sans-serif; }
-  #map { height: 100vh; }
+body { margin: 0; font-family: Arial, sans-serif; }
+#map { height: 100vh; }
 
-  .house-label {
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid #666;
-    white-space: nowrap;
-    font-size: 13px;
-    color: #fff;
-  }
+.house-label {
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #666;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #fff;
+}
 
-  #color-panel {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    padding: 5px 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    background: rgba(255,255,255,0.95);
-    border-radius: 8px;
-    z-index: 1000;
-    font-size: 14px;
-    box-shadow: 0 0 6px rgba(0,0,0,0.3);
-  }
-  .tech-color {
-    display:flex;
-    align-items:center;
-    gap:4px;
-    padding:4px 6px;
-    border-radius:4px;
-    color:#000;
-    font-weight:bold;
-    border:1px solid #666;
-    background-color: white;
-    transition: background 0.3s;
-  }
-  .tech-color-box { width:20px; height:20px; border-radius:4px; border:1px solid #333; }
+/* Färgpanel längst upp */
+#color-panel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: rgba(255,255,255,0.4); /* lite transparent */
+  backdrop-filter: blur(6px); /* mjuk blur för kartan bakom */
+  border-radius: 8px;
+  z-index: 1000;
+  font-size: 14px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+}
 
-  #search-box {
-    position: absolute;
-    top: 90px;
-    left: 10px;
-    width: 300px;
-    display: flex;
-    gap: 5px;
-    z-index: 1000;
-  }
-  #search-box input { flex: 1; padding:6px; border-radius:4px; border:1px solid #999; }
-  #search-box button { padding:6px 10px; border-radius:4px; border:none; background-color:#4CAF50; color:white; cursor:pointer; }
-  #search-box button:hover { background-color:#45a049; }
+.tech-color {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 6px;
+  border-radius:4px;
+  color:#000;
+  font-weight:bold;
+  border:1px solid #666;
+  background-color: white;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.tech-color-box { width:20px; height:20px; border-radius:4px; border:1px solid #333; }
 
-  #control-panel {
-    position: absolute;
-    top: 140px;
-    left: 10px;
-    background: rgba(255,255,255,0.95);
-    padding: 8px;
-    border-radius: 8px;
-    box-shadow: 0 0 6px rgba(0,0,0,0.3);
-    max-height: 60vh;
-    overflow-y: auto;
-    font-size: 14px;
-    z-index: 1000;
-    width: 300px;
-  }
+#search-box {
+  position: absolute;
+  top: 90px;
+  left: 10px;
+  width: 300px;
+  display: flex;
+  gap: 5px;
+  z-index: 1000;
+}
+#search-box input { flex: 1; padding:6px; border-radius:4px; border:1px solid #999; }
+#search-box button { padding:6px 10px; border-radius:4px; border:none; background-color:#4CAF50; color:white; cursor:pointer; transition: background 0.3s; }
+#search-box button:hover { background-color:#45a049; }
 
-  .filter-panel {
-    margin-bottom: 10px;
-    padding: 8px;
-    border-radius: 6px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-  }
-  .filter-panel label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    margin-bottom: 6px;
-    font-weight: bold;
-  }
-  .filter-panel input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #2196F3;
-    cursor: pointer;
-  }
+#control-panel {
+  position: absolute;
+  top: 140px;
+  left: 10px;
+  background: rgba(255,255,255,0.4); /* lite transparent */
+  backdrop-filter: blur(6px); /* mjuk blur för kartan bakom */
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+  max-height: 60vh;
+  overflow-y: auto;
+  font-size: 14px;
+  z-index: 1000;
+  width: 300px;
+}
 
-  .collapsible {
-    background-color: #f1f1f1;
-    color: #444;
-    cursor: pointer;
-    padding: 10px;
-    width: 100%;
-    border: none;
-    text-align: left;
-    outline: none;
-    font-size: 16px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-  }
-  .active, .collapsible:hover { background-color: #ddd; }
-  .content { padding: 0 10px; display: none; overflow: hidden; }
+.filter-panel {
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+}
+.filter-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+.filter-panel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2196F3;
+  cursor: pointer;
+}
 
-  #reload-button {
-    display:block;
-    width:100%;
-    padding:6px;
-    margin-bottom:10px;
-    border:none;
-    background-color:#2196F3;
-    color:white;
-    border-radius:4px;
-    cursor:pointer;
-    font-weight:bold;
-  }
-  #reload-button:hover { background-color:#1976D2; }
+.collapsible {
+  background-color: #f1f1f1;
+  color: #444;
+  cursor: pointer;
+  padding: 10px;
+  width: 100%;
+  border: none;
+  text-align: left;
+  outline: none;
+  font-size: 16px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.active, .collapsible:hover { background-color: #ddd; }
+.content { padding: 0 10px; display: none; overflow: hidden; }
 
-  #loading-container {
-    position:absolute;
-    top: 60px;
-    left: 10px;
-    width:300px;
-    height:26px;
-    background:#ddd;
-    border-radius:6px;
-    overflow:hidden;
-    z-index:1001;
-    display:none;
-  }
-  #loading-bar {
-    height:100%;
-    width:0%;
-    background:#4CAF50;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:black;
-    font-weight:bold;
-    transition: width 0.2s;
-  }
+#reload-button {
+  display:block;
+  width:100%;
+  padding:6px;
+  margin-bottom:10px;
+  border:none;
+  background-color:#2196F3;
+  color:white;
+  border-radius:4px;
+  cursor:pointer;
+  font-weight:bold;
+}
+#reload-button:hover { background-color:#1976D2; }
 
-  .transparent-icon {
-    background: transparent;
-    font-size: 32px;
-    text-align: center;
-    line-height: 32px;
-  }
+#loading-container {
+  position:absolute;
+  top: 60px;
+  left: 10px;
+  width:300px;
+  height:26px;
+  background:#ddd;
+  border-radius:6px;
+  overflow:hidden;
+  z-index:1001;
+  display:none;
+}
+#loading-bar {
+  height:100%;
+  width:0%;
+  background:#4CAF50;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:black;
+  font-weight:bold;
+  transition: width 0.2s;
+}
 
-  #search-box, #control-panel {
-    display: none;
-  }
+.transparent-icon {
+  background: transparent;
+  font-size: 32px;
+  text-align: center;
+  line-height: 32px;
+}
+
+#search-box, #control-panel { display: none; }
 </style>
 </head>
 
@@ -180,11 +182,11 @@
 <div id="search-box">
   <input type="text" id="address-input" placeholder="Sök adress...">
   <button onclick="searchAddress()">Sök</button>
+  <button id="reset-button" onclick="resetSearch()">Återställ</button>
 </div>
 
 <div id="control-panel">
 
-  <!-- FILTER PANEL -->
   <div class="filter-panel">
     <label>
       <input type="checkbox" id="filter-vitvaror" checked>
@@ -197,8 +199,9 @@
   </div>
 
   <button type="button" class="collapsible nice-button">
-  <span>Teknikerlista</span>
-  <span class="arrow">▼</span></button>
+    <span>Teknikerlista</span>
+    <span class="arrow">▼</span>
+  </button>
   <div class="content">
     <button id="reload-button" onclick="loadCSV()">Ladda om tekniker</button>
     <div id="technician-list"></div>
@@ -216,11 +219,14 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ attribution: 
 let technicians = [];
 let allMarkers = [];
 let addressOffsets = {};
+let selectedTechnician = null;
+const initialView = { center:[59.33,18.06], zoom:10 };
 
 const loadingContainer = document.getElementById("loading-container");
 const loadingBar = document.getElementById("loading-bar");
 let searchMarker = null;
 
+// Geocoding
 async function geocode(address){
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
   const res = await fetch(url,{headers:{ "User-Agent":"ErgonovaTekniker/1.0" }});
@@ -238,6 +244,7 @@ function applyOffset(latlng, key){
 
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
+// Load CSV
 async function loadCSV(){
   loadingContainer.style.display = "block";
   loadingBar.style.width = "0%";
@@ -326,6 +333,33 @@ async function loadCSV(){
   }, 300);
 }
 
+// Render färgpanel
+function renderColorPanel(){
+  const p = document.getElementById("color-panel");
+  p.innerHTML="";
+  technicians.forEach((t,i)=>{
+    const d = document.createElement("div");
+    d.className="tech-color";
+    d.id="tech-color-"+i;
+    d.dataset.techName = t.name;
+    d.dataset.resource = t.resource;
+    d.innerHTML = `<div class="tech-color-box" style="background:${t.color}"></div>${t.name}`;
+    d.onclick = () => toggleTechnicianFilter(t.name);
+    p.appendChild(d);
+  });
+}
+
+// Toggle tekniker filter via färgpanel
+function toggleTechnicianFilter(name){
+  if(selectedTechnician === name){
+    selectedTechnician = null;
+  } else {
+    selectedTechnician = name;
+  }
+  applyResourceFilter();
+}
+
+// Render teknikerlista
 function renderTechnicianList(){
   const c = document.getElementById("technician-list");
   c.innerHTML="";
@@ -336,26 +370,7 @@ function renderTechnicianList(){
   });
 }
 
-function renderColorPanel(){
-  const p = document.getElementById("color-panel");
-  p.innerHTML="";
-  technicians.forEach((t,i)=>{
-    const d = document.createElement("div");
-    d.className="tech-color";
-    d.id="tech-color-"+i;
-    d.dataset.techName = t.name;
-    d.innerHTML = `<div class="tech-color-box" style="background:${t.color}"></div>${t.name}`;
-    p.appendChild(d);
-  });
-}
-
-const coll = document.querySelector(".collapsible");
-coll.onclick = function(){
-  this.classList.toggle("active");
-  const c = this.nextElementSibling;
-  c.style.display = c.style.display==="block"?"none":"block";
-};
-
+// Sök adress
 async function searchAddress(){
   const q = document.getElementById("address-input").value;
   if(!q) return alert("Skriv en adress");
@@ -363,37 +378,47 @@ async function searchAddress(){
   const coords = await geocode(q);
   if(!coords) return alert("Adressen hittades inte");
 
+  if(searchMarker){ map.removeLayer(searchMarker); searchMarker = null; }
+
+  searchMarker = L.marker(coords, {
+    icon: L.divIcon({ html: "🔵", className: "transparent-icon", iconSize: [50,50], iconAnchor:[25,25] })
+  }).addTo(map).bindTooltip(q,{permanent:true,direction:"top",className:"house-label",offset:[0,-10]});
+
+  const el = searchMarker.getTooltip().getElement();
+  if(el){ el.style.backgroundColor="#2196F3"; el.style.color="#fff"; }
+
+  map.setView(coords, 15);
+
+  const distances = allMarkers.map(o=>{
+    const ll = o.marker.getLatLng();
+    return { techName: o.techName, distance: Math.hypot(ll.lat-coords[0], ll.lng-coords[1]) };
+  });
+
+  distances.sort((a,b)=>a.distance-b.distance);
+  const nearestTwo = distances.slice(0,2).map(d=>d.techName);
+
+  technicians.forEach((t,i)=>{
+    const el = document.getElementById("tech-color-"+i);
+    if(el && t.name !== selectedTechnician){
+      el.style.backgroundColor = "white";
+      el.style.color = "#000";
+    }
+  });
+
+  technicians.forEach((t,i)=>{
+    if(nearestTwo.includes(t.name) && t.name !== selectedTechnician){
+      const el = document.getElementById("tech-color-"+i);
+      if(el){ el.style.backgroundColor="#FF5C00"; el.style.color="#000"; }
+    }
+  });
+}
+
+// Reset sökning
+function resetSearch() {
   if(searchMarker){
     map.removeLayer(searchMarker);
     searchMarker = null;
   }
-
-  searchMarker = L.marker(coords, {
-    icon: L.divIcon({
-      html: "🔵",
-      className: "transparent-icon",
-      iconSize: [50,50],
-      iconAnchor: [25,25]
-    })
-  }).addTo(map).bindTooltip(q, {permanent:true, direction:"top", className:"house-label", offset:[0,-10]});
-
-  const el = searchMarker.getTooltip().getElement();
-  if(el){
-    el.style.backgroundColor = "#2196F3";
-    el.style.color = "#fff";
-  }
-
-  map.setView(coords, 15);
-
-  const distances = allMarkers.map(o => {
-    const ll = o.marker.getLatLng();
-    const d = Math.hypot(ll.lat - coords[0], ll.lng - coords[1]);
-    return { techName: o.techName, distance: d };
-  });
-
-  distances.sort((a,b) => a.distance - b.distance);
-  const nearestTwo = distances.slice(0, 2).map(d => d.techName);
-
   technicians.forEach((t,i)=>{
     const el = document.getElementById("tech-color-"+i);
     if(el){
@@ -401,51 +426,71 @@ async function searchAddress(){
       el.style.color = "#000";
     }
   });
+  selectedTechnician = null;
+  applyResourceFilter();
+  document.getElementById("address-input").value = "";
+  // Zooma ut till startvy
+  map.setView(initialView.center, initialView.zoom);
+}
+
+// Filter logik
+function applyResourceFilter(){
+  const vitvarorChecked = document.getElementById("filter-vitvaror").checked;
+  const tvattstugorChecked = document.getElementById("filter-tvattstugor").checked;
+
+  allMarkers.forEach(o=>{
+    let show = true;
+
+    if(selectedTechnician){
+      show = o.techName === selectedTechnician;
+    } else if(vitvarorChecked && !tvattstugorChecked){
+      show = o.resource.toLowerCase().includes("vitvar");
+    } else if(!vitvarorChecked && tvattstugorChecked){
+      show = o.resource.toLowerCase().includes("tvätt");
+    } else if(vitvarorChecked && tvattstugorChecked){
+      show = true;
+    } else {
+      show = false;
+    }
+
+    if(show){ if(!map.hasLayer(o.marker)) o.marker.addTo(map); }
+    else { if(map.hasLayer(o.marker)) map.removeLayer(o.marker); }
+  });
 
   technicians.forEach((t,i)=>{
-    if(nearestTwo.includes(t.name)){
-      const el = document.getElementById("tech-color-"+i);
-      if(el){
-        el.style.backgroundColor = "#FF5C00";
-        el.style.color = "#000";
+    const el = document.getElementById("tech-color-"+i);
+    if(el){
+      if(selectedTechnician){
+        el.style.display = (t.name === selectedTechnician) ? "flex" : "none";
+      } else {
+        const match = (vitvarorChecked && t.resource.toLowerCase().includes("vitvar")) ||
+                      (tvattstugorChecked && t.resource.toLowerCase().includes("tvätt"));
+        el.style.display = match ? "flex" : "none";
       }
     }
   });
 }
 
-/* ===========================
-   FILTER LOGIK
-=========================== */
-
-function applyResourceFilter(){
-  const vitvarorChecked = document.getElementById("filter-vitvaror").checked;
-  const tvattstugorChecked = document.getElementById("filter-tvattstugor").checked;
-
-  allMarkers.forEach(o => {
-    let show = false;
-    const res = o.resource.toLowerCase();
-
-    if (vitvarorChecked && tvattstugorChecked) {
-      show = true; // båda ikryssade = visa alla
-    }
-    else if (vitvarorChecked && res.includes("vitvar")) {
-      show = true;
-    }
-    else if (tvattstugorChecked && res.includes("tvätt")) {
-      show = true;
-    }
-    // annars = false → visas inte
-
-    if (show) {
-      if (!map.hasLayer(o.marker)) o.marker.addTo(map);
-    } else {
-      if (map.hasLayer(o.marker)) map.removeLayer(o.marker);
-    }
-  });
-}
+// Eventlisteners
 document.getElementById("filter-vitvaror").addEventListener("change", applyResourceFilter);
 document.getElementById("filter-tvattstugor").addEventListener("change", applyResourceFilter);
 
+// Enter-tangent för sökning
+document.getElementById("address-input").addEventListener("keypress", function(e){
+  if(e.key === "Enter"){
+    searchAddress();
+  }
+});
+
+// Collapsible knapp
+const coll = document.querySelector(".collapsible");
+coll.onclick = function(){
+  this.classList.toggle("active");
+  const c = this.nextElementSibling;
+  c.style.display = c.style.display==="block"?"none":"block";
+}
+
+// Starta
 window.addEventListener("DOMContentLoaded", loadCSV);
 </script>
 
