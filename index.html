@@ -212,7 +212,7 @@ body { margin: 0; font-family: Arial, sans-serif; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <script>
-const map = L.map("map", { zoomControl: false }).setView([59.33, 18.06], 10);
+const map = L.map("map", { zoomControl: false }).setView([59.33, 18.06], 9);
 L.control.zoom({ position: "bottomright" }).addTo(map);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{ attribution: "© OpenStreetMap"}).addTo(map);
 
@@ -220,7 +220,7 @@ let technicians = [];
 let allMarkers = [];
 let addressOffsets = {};
 let selectedTechnician = null;
-const initialView = { center:[59.33,18.06], zoom:10 };
+const initialView = { center:[59.33,18.06], zoom:9 };
 
 const loadingContainer = document.getElementById("loading-container");
 const loadingBar = document.getElementById("loading-bar");
@@ -496,6 +496,7 @@ window.addEventListener("DOMContentLoaded", loadCSV);
 
 </body>
 </html>
+
 
 
 
